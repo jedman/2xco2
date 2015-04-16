@@ -323,6 +323,94 @@ def adiabatic_state(thetae0,qt,p,verbose=False):
     return (T,qv,ql,qi,rho)
 ##  End adiabatic state  ################################################
 
+
+def verbose_fallout(dqv,dql,dqi):
+    if dqv < 0:
+        source = ' vapor '
+    else:
+        source = ''
+    if dql < 0:
+        source = source + 'liquid'
+    else:
+        source = source + ''
+    if dqi < 0:
+        source = source + ' solid '
+    else:
+        source = source + ''
+    if dqv > 0:
+        sink = ' vapor '
+    else:
+        sink = ''
+    if dql > 0:
+        sink = sink + 'liquid'
+    else:
+        sink = sink + ''
+    if dqi > 0:
+        sink = sink + ' solid '
+    else:
+        sink = sink + ''
+    return '['+source+'] converted into ['+sink+']'
+        
+    
+def fallout(gamma,p,T,qv_series,ql_series,qi_series,verbose=False):
+    thetae_init = theta_e(p,T,qv_series[1],ql_series[1],qi_series[1])
+    qt_init = qv_series[1]+ql_series[1]+qi_series[1]
+    qt_min = qvstar(p,T)
+    dqv = qv_series[1]-qv_series[0]
+    dql = ql_series[1]-ql_series[0]
+    dqi = qi_series[1]-qi_series[0]
+    dqcon = dql + dqi
+    
+    if verbose:
+        print verbose_fallout(dqv,dql,dqi)
+        print 'theta_e before fallout: '+str(thetae_init)
+        print 'qt before fallout: '+str(qt_init)
+        print 'Minimum qt: '+str(qt_min)
+        print 'dqv: '+str(dqv)
+        print 'dql: '+str(dql)
+        print 'dqi: '+str(dqi)
+        print 'new condensates: '+str(dqcon)
+    # If no new condensates, no fallout
+    if (dqcon <= 0.):
+        if verbose:
+            print 'No new condensates.'
+        return (ql_series[1],qi_series[1],thetae_init,qt_init)
+    else:
+        # more liquid and ice
+        if (dql >= 0. and dqi >= 0.):
+            dql_new = (1. - gamma)*dql
+            dqi_new = (1. - gamma)*dqi
+        # less liquid, more ice
+        elif (dql < 0. and dqi > 0.):
+            dql_new = dql
+            dqi_new = dqi - gamma*dqcon
+        # more liquid, less ice
+        elif (dql > 0. and dqi < 0.):   
+            dql_new = dql - gamma*dqcon
+            dqi_new = dqi_new
+        else:
+            print 'warning: other case'
+        qv_new = qv_series[1]
+        ql_new = ql_series[0] + dql_new
+        qi_new = qi_series[0] + dqi_new
+        qt_new = qv_series[1] + ql_new + qi_new
+        dqcon_new = ql_new - ql_series[0] + qi_new - qi_series[0]
+        if (qt_new < qt_min):
+            if verbose:
+                print 'warning: parcel now subsaturated'
+            qt_new = qt_min
+            qv_new = qt_min
+            ql_new = 0.
+            qi_new = 0.
+        thetae_new = theta_e(p,T,qv_new,ql_new,qi_new)
+        if verbose:
+            print 'New ql: '+str(ql_new)
+            print 'New qi: '+str(qi_new)
+            print 'New thetae: '+str(thetae_new)
+            print 'New qt: '+str(qt_new)
+            print 'Fraction fallout: '+str(1. - dqcon_new/dqcon)
+        return (ql_new,qi_new,thetae_new,qt_new) 
+
 ## Compute adiabat  #####################################################
 def adiabat(T0,qv0,p_prof,ql0=0.,qi0=0.,fallout_factor=0.):
     thetae0 = theta_e(p_prof[0],T0,qv0,ql0,qi0)
