@@ -14,7 +14,7 @@ class TimeSeries:
         filepath: beginning of file string
         nfiles: list of file numbers to read in '''
         for index, var in enumerate(vars):
-            for i in nfiles:
+            for i in range(nfiles):
                 filename = filepath + str(i) + ".nc"
                 tmp = nc.Dataset(filename)
                 tmp_var = getvar(var, tmp)
@@ -23,9 +23,9 @@ class TimeSeries:
                 else:
                     prevar = np.append(prevar, tmp_var) # collect the variable
             if (index == 0):
-                self.variables_1d = {var:prevar} # create the dictionary the variables
+                self.vars_1d = {var:prevar} # create the dictionary the variables
             else:
-                self.variables_1d.update({var:prevar}) # update dictionary with each new variable
+                self.vars_1d.update({var:prevar}) # update dictionary with each new variable
 
     def read2d(self,vars,filepath, nfiles):
         '''vars: list of variables to read in
@@ -33,7 +33,7 @@ class TimeSeries:
           nfiles: list of file numbers to read in '''
         for index, var in enumerate(vars):
             tmp_data = np.zeros((len(self.time), len(self.z)))
-            for i in nfiles:
+            for i in range(nfiles):
                 filename = filepath + str(i) + ".nc"
                 tmp = nc.Dataset(filename)
                 tmp_time = getvar('time',tmp)
@@ -45,9 +45,9 @@ class TimeSeries:
                     chunk = range(max(chunk)+1, max(chunk)+len(tmp_time)+1)
                     tmp_data[chunk,:] = tmp_var
             if (index == 0):
-                self.variables_2d = {var:tmp_data} # create the dictionary the variables
+                self.vars_2d = {var:tmp_data} # create the dictionary the variables
             else:
-                self.variables_2d.update({var:tmp_data})
+                self.vars_2d.update({var:tmp_data})
 
 
 def readtime(filepath,nfiles, ndays = 10., offset = 0. ):
@@ -58,7 +58,7 @@ def readtime(filepath,nfiles, ndays = 10., offset = 0. ):
     offset: day at start of time series'''
 
     time = np.zeros(0)
-    for i in nfiles:
+    for i in range(nfiles):
         filename = filepath + str(i) + ".nc"
         tmp = nc.Dataset(filename)
         time_tmp = getvar('time',tmp) + ndays*i + offset
